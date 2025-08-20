@@ -1,3 +1,4 @@
+#first-aid-kit
 立刻将启动图片换回原样
 
 用于被骂的时候（bushi）
