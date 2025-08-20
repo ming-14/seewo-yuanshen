@@ -75,7 +75,7 @@ SEEWO-YUANSHEN-MAIN
         │
         └─bin
                 backup.png.bak	原启动图片
-                base.vbs		基础脚本，与 "binbase.vbs" 一样
+                base.vbs		基础脚本，与 "bin\base.vbs" 一样
                 replace.vbs		重置启动图片
                 shortcut.vbs	重置快捷方式
 ```
@@ -119,3 +119,4 @@ SEEWO-YUANSHEN-MAIN
 
 ## 坑
 所有代码都必须时 ASCII 编码，不然就会乱码
+
