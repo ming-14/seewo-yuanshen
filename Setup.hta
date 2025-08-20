@@ -1,0 +1,295 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>安装程序</title>
+<HTA:APPLICATION 
+    ID="RikkaInstaller"
+    APPLICATIONNAME="Rikka-yuanshen Installer"
+    BORDER="thin"
+    ICON=""
+    SCROLL="no"
+    SINGLEINSTANCE="yes"
+    WINDOWSTATE="normal"
+    MAXIMIZEBUTTON="no"
+    MINIMIZEBUTTON="yes"
+    SYSMENU="yes"
+    CAPTION="yes"
+    INNERBORDER="no"
+    SELECTION="no"
+    SHOWINTASKBAR="yes"
+    VERSION="1.0"
+/>
+<script language="VBScript">
+	' @brief 引用其它 VBS
+	Function include(sInstFile)
+		Dim oFSO : Set oFSO = CreateObject("Scripting.FileSystemObject")
+		Dim f : Set f = oFSO.OpenTextFile(sInstFile)
+		Dim s : s = f.ReadAll
+		f.Close
+		ExecuteGlobal s
+	End Function
+
+	include("bin\base.vbs")
+	include("bin\checkEnvironment.vbs")
+</script>
+<script language="VBScript">
+	' +-+-+-+-+-+-+-+-+-+-+-+-+-
+	' 检查程序文件是否完整
+	' +-+-+-+-+-+-+-+-+-+-+-+-+-
+	Dim fileList : fileList = Array( _
+		"CreateShortcuts.vbs", _
+		"bin/base.vbs", _
+		"bin/checkEnvironment.vbs", _
+		"bin/yuanshen.vbs", _
+		"bin/img.pngx" _
+	)
+	Dim missingFiles : missingFiles = ""
+	Dim allExist : allExist = True
+	Dim fso : Set fso = CreateObject("Scripting.FileSystemObject")
+	Dim filePath
+	For Each filePath In fileList
+		If Not fso.FileExists(filePath) Then
+			missingFiles = missingFiles & " - " & filePath & vbCrLf
+			allExist = False
+		End If
+	Next
+
+	If Not allExist Then
+		Msgbox("以下文件缺失：" & vbCrLf & missingFiles)
+		window.close
+	End If
+	
+	' +-+-+-+-+-+-+-+-+-+-+-+-+-
+	' 检查是否安装希沃白板5
+	' +-+-+-+-+-+-+-+-+-+-+-+-+-
+	If Not isEasiNoteInstalled() Then
+		Msgbox "未找到希沃白板5"
+		window.close
+	End if
+	
+	' +-+-+-+-+-+-+-+-+-+-+-+-+-
+	' 检查系统是否是64位
+	' +-+-+-+-+-+-+-+-+-+-+-+-+-
+	If Not isWindows64bit() Then
+		Msgbox "该程序只适用于64位"
+		window.close
+	End IF
+</script>
+<script language="VBScript">
+    Option Explicit
+    
+    ' 初始化默认安装路径
+    Sub Window_OnLoad
+        Dim fso, sysDrive
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        sysDrive = fso.GetDriveName(fso.GetSpecialFolder(0)) & "\"
+        document.getElementById("installPath").value = sysDrive
+        window.resizeTo 500, 300
+        CenterWindow
+    End Sub
+    
+    ' 窗口居中
+    Sub CenterWindow
+        window.moveTo (screen.width - document.body.clientWidth) / 2, (screen.height - document.body.clientHeight) / 2
+    End Sub
+    
+    ' 浏览文件夹
+    Sub BrowseFolder
+        Dim shell, folder, path
+        Set shell = CreateObject("Shell.Application")
+        Set folder = shell.BrowseForFolder(0, "请选择安装目录", 0, "")
+        
+        If Not folder Is Nothing Then
+            path = folder.Self.Path
+            document.getElementById("installPath").value = path
+        End If
+    End Sub
+    
+    ' 安装主程序
+    Sub StartInstall
+        Dim installPath, hideFolder, fullPath
+        Dim fso, shell, currentPath, file, folder
+        Dim adminRestart
+        
+        installPath = document.getElementById("installPath").value
+        hideFolder = document.getElementById("hideFolder").checked
+        
+        ' 检查路径是否有效
+        If installPath = "" Then
+            MsgBox "请选择安装路径！", vbExclamation, "错误"
+            Exit Sub
+        End If
+        
+        ' 确保路径以反斜杠结尾
+        If Right(installPath, 1) <> "\" Then
+            installPath = installPath & "\"
+        End If
+        
+        fullPath = installPath & "Rikka-yuanshen\"
+        
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        Set shell = CreateObject("WScript.Shell")
+        
+        ' 获取当前脚本路径
+        currentPath = Replace(document.location.pathname, "/", "\")
+        currentPath = Left(currentPath, InStrRev(currentPath, "\"))
+        
+        On Error Resume Next
+        
+        ' 尝试创建目录
+        If Not fso.FolderExists(fullPath) Then
+            fso.CreateFolder fullPath
+        End If
+        
+        On Error GoTo 0
+        
+        ' 复制文件（排除Setup.hta）
+        CopyFiles currentPath, fullPath
+        
+        ' 设置文件夹属性
+        If hideFolder Then
+            SetFolderAttributes fullPath
+        End If
+        
+        ' 运行创建快捷方式的脚本
+        RunCreateShortcuts fullPath
+        
+        MsgBox "安装成功！", vbInformation, "完成"
+        window.close
+    End Sub
+    
+    ' 复制文件
+    Sub CopyFiles(srcFolder, destFolder)
+        Dim fso, folder, file, subFolder
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        
+        Set folder = fso.GetFolder(srcFolder)
+        
+        For Each file In folder.Files
+            If LCase(file.Name) <> "setup.hta" Then
+                file.Copy destFolder & file.Name
+            End If
+        Next
+        
+        For Each subFolder In folder.SubFolders
+            If LCase(subFolder.Name) <> "setup.hta" Then
+                subFolder.Copy destFolder & subFolder.Name
+            End If
+        Next
+    End Sub
+    
+    ' 设置文件夹属性
+    Sub SetFolderAttributes(folderPath)
+        Dim fso, folder
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        
+        If fso.FolderExists(folderPath) Then
+            Set folder = fso.GetFolder(folderPath)
+            folder.Attributes = folder.Attributes Or 2 ' 隐藏
+            folder.Attributes = folder.Attributes Or 4 ' 系统
+        End If
+    End Sub
+    
+    ' 运行创建快捷方式的脚本
+    Sub RunCreateShortcuts(folderPath)
+        Dim shell
+        Set shell = CreateObject("WScript.Shell")
+        
+        shell.CurrentDirectory = folderPath
+        shell.Run "CreateShortcuts.vbs", 0, True
+    End Sub
+</script>
+<style>
+    body {
+        font-family: "Microsoft YaHei", Arial, sans-serif;
+        font-size: 12px;
+        margin: 10px;
+        background-color: #f0f0f0;
+    }
+    .container {
+        width: 100%;
+        max-width: 450px;
+        margin: 0 auto;
+    }
+    .header {
+        background-color: #2c3e50;
+        color: white;
+        padding: 10px;
+        text-align: center;
+        font-weight: bold;
+    }
+    .form-group {
+        margin-bottom: 15px;
+    }
+    label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    input[type="text"] {
+        width: 100%;
+        padding: 5px;
+        box-sizing: border-box;
+    }
+    .input-group {
+        display: flex;
+    }
+    .input-group input {
+        flex: 1;
+        margin-right: 5px;
+    }
+    .checkbox {
+        margin-top: 10px;
+    }
+    .buttons {
+        text-align: center;
+        margin-top: 20px;
+    }
+    button {
+        padding: 8px 20px;
+        margin: 0 5px;
+        cursor: pointer;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 3px;
+    }
+    button:hover {
+        background-color: #2980b9;
+    }
+    .footer {
+        margin-top: 15px;
+        font-size: 10px;
+        color: #777;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="header">安装程序</div>
+    
+    <div class="form-group">
+        <label for="installPath">安装路径：</label>
+        <div class="input-group">
+            <input type="text" id="installPath" placeholder="请选择安装路径">
+            <button onclick="BrowseFolder">浏览</button>
+        </div>
+    </div>
+    
+    <div class="checkbox">
+        <input type="checkbox" id="hideFolder">隐藏文件
+    </div>
+    
+    <div class="buttons">
+        <button onclick="StartInstall">安装</button>
+        <button onclick="window.close">取消</button>
+    </div>
+    
+    <div class="footer">
+        安装程序将创建 Rikka-yuanshen 目录并复制所有必需文件
+    </div>
+</div>
+</body>
+</html>
