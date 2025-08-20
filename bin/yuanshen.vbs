@@ -15,7 +15,7 @@ Dim swenlauncher : swenlauncher = FindInstallPathIcon("希沃白板 5")
 ' +-+-+-+-+-+-+-+-+-+-+-+-+-
 Check()
 ReplaceImg(swenlauncher)
-createobject("wscript.shell").run swenlauncher, 0
+createobject("wscript.shell").run """" & swenlauncher & """", 0
 ' +-+-+-+-+-+-+-+-+-+-+-+-+-
 ' 主程序 End
 ' +-+-+-+-+-+-+-+-+-+-+-+-+-
@@ -63,7 +63,7 @@ Function Check()
 	' +-+-+-+-+-+-+-+-+-+-+-+-+-
 	If Not isWindows64bit() Then
 		Msgbox "该程序只适用于64位"
-		ws.run swenlauncher, 0
+		ws.run """" & swenlauncher & """", 0
 		WScript.Quit(1)
 	End IF
 End Function
