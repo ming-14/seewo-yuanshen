@@ -63,7 +63,7 @@ SEEWO-YUANSHEN-MAIN
 │  └─img
 │          img.pngx			图片
 │          ...
-│          files.json		存储图片信息，供 `manager.py` 使用
+│          files.json		存储图片信息，供 "manager.py" 使用
 │          to.ps1			一键生成图片库
 │
 └─Tool
@@ -75,7 +75,7 @@ SEEWO-YUANSHEN-MAIN
         │
         └─bin
                 backup.png.bak	原启动图片
-                base.vbs		基础脚本，与 `binbase.vbs` 一样
+                base.vbs		基础脚本，与 "binbase.vbs" 一样
                 replace.vbs		重置启动图片
                 shortcut.vbs	重置快捷方式
 ```
@@ -116,4 +116,5 @@ SEEWO-YUANSHEN-MAIN
 ### 已知问题
 
 本程序每次启动时都会遍布注册表查找希沃白板的安装路径，可能导致速度减慢（在现有的测试中，会比原版多个几百毫秒）
+
 
